@@ -230,7 +230,10 @@ class PostController with ChangeNotifier {
       Map<String, dynamic> result = jsonDecode(res.body);
 
       Post output = Post.fromJson(result);
-      posts[output.id.toString()] = output;
+      //modified this code since it the last code use the id that is always being return from the request as 101
+      //so instead of new post to be added or appended it is being replace because it always use id 101 ex. post[101]
+      var length = postList.length + 1;
+      posts[length.toString()] = output;
       working = false;
       notifyListeners();
       return output;
