@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+//updated 6/20/24 at 7:41 PM
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:http/http.dart' as http;
@@ -58,14 +58,21 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           for (Post post in controller.postList)
-                            Container(
-                                padding: const EdgeInsets.all(8),
-                                margin: const EdgeInsets.only(bottom: 8),
-                                decoration: BoxDecoration(
-                                    border:
-                                        Border.all(color: Colors.blueAccent),
-                                    borderRadius: BorderRadius.circular(16)),
-                                child: Text(post.toString()))
+                            GestureDetector(
+                              onTap: () {
+                                showConfirmationDialog(
+                                    context, post.id); //Works when displayed
+                              },
+                              child: Container(
+                                  padding: const EdgeInsets.all(15),
+                                  margin: const EdgeInsets.only(bottom: 8),
+                                  width: 450,
+                                  decoration: BoxDecoration(
+                                      border:
+                                          Border.all(color: Colors.blueAccent),
+                                      borderRadius: BorderRadius.circular(10)),
+                                  child: Text("Title: ${post.title}")),
+                            )
                         ],
                       )),
                 );
@@ -83,6 +90,49 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
 
   showNewPostFunction(BuildContext context) {
     AddPostDialog.show(context, controller: controller);
+  }
+
+  void showConfirmationDialog(BuildContext context, int postId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Details"),
+          content: FutureBuilder<Post>(
+            future: controller.getPostById(postId),
+            builder: (BuildContext context, AsyncSnapshot<Post> snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const CircularProgressIndicator();
+              } else if (snapshot.hasError) {
+                return Text("Error: ${snapshot.error}");
+              } else if (!snapshot.hasData) {
+                return const Text("Post not found.");
+              } else {
+                Post post = snapshot.data!;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("ID: ${post.id}\n"),
+                    Text("Title: ${post.title}\n"),
+                    Text("Body: ${post.body}\n"),
+                    Text("User: ${post.userId}\n"),
+                  ],
+                );
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Close"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -164,7 +214,7 @@ class PostController with ChangeNotifier {
       required int userId}) async {
     try {
       working = true;
-      if(error != null ) error = null;
+      if (error != null) error = null;
       print(title);
       print(body);
       print(userId);
@@ -194,6 +244,16 @@ class PostController with ChangeNotifier {
     }
   }
 
+  Future<Post> getPostById(int postId) async {
+    http.Response res = await http
+        .get(Uri.parse("https://jsonplaceholder.typicode.com/posts/$postId"));
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw Exception("${res.statusCode} | ${res.body}");
+    }
+    var result = jsonDecode(res.body);
+    return Post.fromJson(result);
+  }
+
   Future<void> getPosts() async {
     try {
       working = true;
@@ -208,6 +268,32 @@ class PostController with ChangeNotifier {
 
       List<Post> tmpPost = result.map((e) => Post.fromJson(e)).toList();
       posts = {for (Post p in tmpPost) "${p.id}": p};
+      working = false;
+      notifyListeners();
+    } catch (e, st) {
+      print(e);
+      print(st);
+      error = e;
+      working = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> getPostsIndi(int postId) async {
+    try {
+      working = true;
+      clear();
+      http.Response res = await HttpService.get(
+          url:
+              "https://jsonplaceholder.typicode.com/posts/$postId"); // dynamic postId
+      if (res.statusCode != 200 && res.statusCode != 201) {
+        throw Exception("${res.statusCode} | ${res.body}");
+      }
+      var result = jsonDecode(res.body);
+
+      List<Post> tmpPost = [Post.fromJson(result)];
+      posts = {for (Post p in tmpPost) "${p.id}": p};
+
       working = false;
       notifyListeners();
     } catch (e, st) {
