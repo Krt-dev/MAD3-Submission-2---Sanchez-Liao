@@ -511,13 +511,13 @@ class HttpService {
     });
   }
 
-  static Future<http.Response> patch({
+  static Future<http.Response> put({
     required String url,
     required Map<dynamic, dynamic> body,
     Map<String, dynamic>? headers,
   }) async {
     Uri uri = Uri.parse(url);
-    return http.patch(uri, body: jsonEncode(body), headers: {
+    return http.put(uri, body: jsonEncode(body), headers: {
       'Content-Type': 'application/json',
       if (headers != null) ...headers,
     });
