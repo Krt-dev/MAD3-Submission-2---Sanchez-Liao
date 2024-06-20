@@ -247,7 +247,13 @@ class PostController with ChangeNotifier {
   Future<Post> getPostById(int postId) async {
     http.Response res = await http
         .get(Uri.parse("https://jsonplaceholder.typicode.com/posts/$postId"));
+    //modified this so that if the post with the corresponding postID is being fetch from the API
+    //and it is not there then it should be in the posts map or list variable locally but if not
+    //then it is an error it can't be found
     if (res.statusCode != 200 && res.statusCode != 201) {
+      if (posts.containsKey(postId.toString())) {
+        return posts[postId.toString()];
+      }
       throw Exception("${res.statusCode} | ${res.body}");
     }
     var result = jsonDecode(res.body);
