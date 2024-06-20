@@ -220,6 +220,71 @@ class _AddPostDialogState extends State<AddPostDialog> {
   }
 }
 
+class EditPostDialog extends StatefulWidget {
+  final int postID;
+  show(BuildContext context, {required PostController controller}) =>
+      showDialog(
+          context: context,
+          builder: (dContext) => EditPostDialog(
+                postID: postID,
+                controller: controller,
+              ));
+  const EditPostDialog(
+      {super.key, Key, required this.postID, required this.controller});
+
+  final PostController controller;
+
+  @override
+  State<EditPostDialog> createState() => _EditPostDialogState();
+}
+
+class _EditPostDialogState extends State<EditPostDialog> {
+  late TextEditingController bodyC, titleC;
+
+  @override
+  void initState() {
+    super.initState();
+    bodyC = TextEditingController();
+    titleC = TextEditingController();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+      title: const Text("Edit Post"),
+      actions: [
+        ElevatedButton(
+          onPressed: () async {
+            // widget.controller.makePost(
+            //     title: titleC.text.trim(), body: bodyC.text.trim(), userId: 1);
+            Navigator.of(context).pop();
+          },
+          child: const Text("Edit"),
+        )
+      ],
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text("Title"),
+          Flexible(
+            child: TextFormField(
+              controller: titleC,
+            ),
+          ),
+          const Text("Content"),
+          Flexible(
+            child: TextFormField(
+              controller: bodyC,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class PostController with ChangeNotifier {
   Map<String, dynamic> posts = {};
   bool working = true;
@@ -443,6 +508,18 @@ class HttpService {
     return http.delete(uri, headers: {
       'Content-Type': 'application/json',
       if (headers != null) ...headers
+    });
+  }
+
+  static Future<http.Response> patch({
+    required String url,
+    required Map<dynamic, dynamic> body,
+    Map<String, dynamic>? headers,
+  }) async {
+    Uri uri = Uri.parse(url);
+    return http.patch(uri, body: jsonEncode(body), headers: {
+      'Content-Type': 'application/json',
+      if (headers != null) ...headers,
     });
   }
 }
