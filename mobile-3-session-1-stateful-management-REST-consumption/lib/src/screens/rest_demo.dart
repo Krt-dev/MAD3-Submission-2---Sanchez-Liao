@@ -313,6 +313,31 @@ class PostController with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  //delete post
+  Future<void> deletePost({required int postId}) async {
+    try {
+      working = true;
+      if (error != null) error = null;
+      http.Response res = await HttpService.delete(
+          url: "https://jsonplaceholder.typicode.com/posts/$postId");
+      if (res.statusCode != 200 && res.statusCode != 201) {
+        throw Exception("${res.statusCode} | ${res.body}");
+      }
+
+      if (posts.containsKey(postId.toString())) {
+        posts.remove(postId.toString());
+      }
+      working = false;
+      notifyListeners();
+    } catch (e, st) {
+      print(e);
+      print(st);
+      error = e;
+      working = false;
+      notifyListeners();
+    }
+  }
 }
 
 class UserController with ChangeNotifier {
@@ -368,6 +393,15 @@ class HttpService {
       Map<String, dynamic>? headers}) async {
     Uri uri = Uri.parse(url);
     return http.post(uri, body: jsonEncode(body), headers: {
+      'Content-Type': 'application/json',
+      if (headers != null) ...headers
+    });
+  }
+
+  static Future<http.Response> delete(
+      {required String url, Map<String, dynamic>? headers}) async {
+    Uri uri = Uri.parse(url);
+    return http.delete(uri, headers: {
       'Content-Type': 'application/json',
       if (headers != null) ...headers
     });
