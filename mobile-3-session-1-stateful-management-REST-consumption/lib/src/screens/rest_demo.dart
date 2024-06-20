@@ -64,8 +64,8 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
                           for (Post post in controller.postList)
                             GestureDetector(
                               onTap: () {
-                                showConfirmationDialog(
-                                    context, post.id); //Works when displayed
+                                showConfirmationDialog(context, post.id,
+                                    controller); //Works when displayed
                               },
                               child: Container(
                                   padding: const EdgeInsets.all(15),
@@ -84,7 +84,11 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
                                         child: Row(
                                           children: [
                                             IconButton(
-                                                onPressed: () {},
+                                                onPressed: () {
+                                                  EditPostDialog.show(context,
+                                                      postID: post.id,
+                                                      controller: controller);
+                                                },
                                                 icon: const Icon(Icons.edit)),
                                             IconButton(
                                                 onPressed: () {
@@ -117,35 +121,23 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
     AddPostDialog.show(context, controller: controller);
   }
 
-  void showConfirmationDialog(BuildContext context, int postId) {
+//details cars
+  void showConfirmationDialog(
+      BuildContext context, int postId, PostController controller) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Details"),
-          content: FutureBuilder<Post>(
-            future: controller.getPostById(postId),
-            builder: (BuildContext context, AsyncSnapshot<Post> snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const CircularProgressIndicator();
-              } else if (snapshot.hasError) {
-                return Text("Error: ${snapshot.error}");
-              } else if (!snapshot.hasData) {
-                return const Text("Post not found.");
-              } else {
-                Post post = snapshot.data!;
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("ID: ${post.id}\n"),
-                    Text("Title: ${post.title}\n"),
-                    Text("Body: ${post.body}\n"),
-                    Text("User: ${post.userId}\n"),
-                  ],
-                );
-              }
-            },
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("ID: ${postId.toString()}\n"),
+              Text("Title: ${controller.posts[postId.toString()]}\n"),
+              Text("Body: ${controller.postList[postId].body}\n"),
+              Text("User: ${controller.postList[postId].userId}\n"),
+            ],
           ),
           actions: [
             TextButton(
@@ -220,66 +212,55 @@ class _AddPostDialogState extends State<AddPostDialog> {
   }
 }
 
-class EditPostDialog extends StatefulWidget {
-  final int postID;
-  show(BuildContext context, {required PostController controller}) =>
-      showDialog(
-          context: context,
-          builder: (dContext) => EditPostDialog(
-                postID: postID,
-                controller: controller,
-              ));
-  const EditPostDialog(
-      {super.key, Key, required this.postID, required this.controller});
+//dialog for the edit post
+class EditPostDialog {
+  static Future<void> show(
+    BuildContext context, {
+    required int postID,
+    required PostController controller,
+  }) async {
+    late TextEditingController bodyC, titleC;
 
-  final PostController controller;
-
-  @override
-  State<EditPostDialog> createState() => _EditPostDialogState();
-}
-
-class _EditPostDialogState extends State<EditPostDialog> {
-  late TextEditingController bodyC, titleC;
-
-  @override
-  void initState() {
-    super.initState();
     bodyC = TextEditingController();
     titleC = TextEditingController();
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      title: const Text("Edit Post"),
-      actions: [
-        ElevatedButton(
-          onPressed: () async {
-            // widget.controller.makePost(
-            //     title: titleC.text.trim(), body: bodyC.text.trim(), userId: 1);
-            Navigator.of(context).pop();
-          },
-          child: const Text("Edit"),
-        )
-      ],
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Title"),
-          Flexible(
-            child: TextFormField(
-              controller: titleC,
-            ),
-          ),
-          const Text("Content"),
-          Flexible(
-            child: TextFormField(
-              controller: bodyC,
-            ),
-          ),
+    await showDialog(
+      context: context,
+      builder: (dContext) => AlertDialog(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        title: const Text("Edit Post"),
+        actions: [
+          ElevatedButton(
+            onPressed: () async {
+              await controller.editPost(
+                postId: postID,
+                title: titleC.text.trim(),
+                body: bodyC.text.trim(),
+                userId: postID,
+              );
+              Navigator.of(context).pop();
+            },
+            child: const Text("Edit"),
+          )
         ],
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Title"),
+            Flexible(
+              child: TextFormField(
+                controller: titleC,
+              ),
+            ),
+            const Text("Content"),
+            Flexible(
+              child: TextFormField(
+                controller: bodyC,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -432,6 +413,39 @@ class PostController with ChangeNotifier {
       if (posts.containsKey(postId.toString())) {
         posts.remove(postId.toString());
       }
+      working = false;
+      notifyListeners();
+    } catch (e, st) {
+      print(e);
+      print(st);
+      error = e;
+      working = false;
+      notifyListeners();
+    }
+  }
+
+  //edit post
+  Future<void> editPost(
+      {required int postId,
+      required String title,
+      required String body,
+      required int userId}) async {
+    try {
+      working = true;
+      if (error != null) error = null;
+      http.Response res = await HttpService.put(
+          url: "https://jsonplaceholder.typicode.com/posts/$postId",
+          body: {"title": title, "body": body, "userId": userId});
+
+      if (res.statusCode != 200 && res.statusCode != 201) {
+        if (!posts.containsKey(postId.toString())) {
+          throw Exception("${res.statusCode} | ${res.body}");
+        }
+      }
+
+      Post newEditedPost =
+          Post(id: postId, body: body, userId: userId, title: title);
+      posts[postId.toString()] = newEditedPost;
       working = false;
       notifyListeners();
     } catch (e, st) {
