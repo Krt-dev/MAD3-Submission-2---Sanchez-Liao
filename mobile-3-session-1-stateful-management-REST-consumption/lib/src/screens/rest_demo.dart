@@ -71,7 +71,28 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
                                       border:
                                           Border.all(color: Colors.blueAccent),
                                       borderRadius: BorderRadius.circular(10)),
-                                  child: Text("Title: ${post.title}")),
+                                  child: Column(
+                                    children: [
+                                      Text("Title: ${post.title}"),
+                                      Padding(
+                                        padding:
+                                            const EdgeInsets.only(left: 190),
+                                        child: Row(
+                                          children: [
+                                            IconButton(
+                                                onPressed: () {},
+                                                icon: const Icon(Icons.edit)),
+                                            IconButton(
+                                                onPressed: () {
+                                                  controller.deletePost(
+                                                      postId: post.id);
+                                                },
+                                                icon: const Icon(Icons.delete)),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  )),
                             )
                         ],
                       )),
