@@ -1,4 +1,8 @@
+//there is a problem when i delete a post because the keys in the postlit or posts will not be aligned anymore.
+//resolve this
+
 import 'dart:convert';
+import 'dart:math';
 //updated 6/20/24 at 7:41 PM
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -229,6 +233,13 @@ class PostController with ChangeNotifier {
     notifyListeners();
   }
 
+  //to generate random ID
+  int generateUniqueId() {
+    Random random = Random();
+    int id = random.nextInt(1000000);
+    return id;
+  }
+
   Future<Post> makePost(
       {required String title,
       required String body,
@@ -246,18 +257,25 @@ class PostController with ChangeNotifier {
         throw Exception("${res.statusCode} | ${res.body}");
       }
 
-      print(res.body);
+      // print(res.body);
 
-      Map<String, dynamic> result = jsonDecode(res.body);
+      // Map<String, dynamic> result = jsonDecode(res.body);
+      //instea of getting the result from the json request to be made as a new post
+      //we only did it locally using the provider or controller posts map
+      //so that the ID of the post would not have error after deleting since the returned ID from
+      //the http request for the newly made post to the backend is 101
+      int randomId = generateUniqueId();
 
-      Post output = Post.fromJson(result);
-      //modified this code since it the last code use the id that is always being return from the request as 101
-      //so instead of new post to be added or appended it is being replace because it always use id 101 ex. post[101]
-      var length = postList.length + 1;
-      posts[length.toString()] = output;
+      while (posts.containsKey(randomId.toString())) {
+        randomId = generateUniqueId();
+      }
+      Post madePost =
+          Post(id: randomId, body: body, userId: randomId, title: title);
+
+      posts[randomId.toString()] = madePost;
       working = false;
       notifyListeners();
-      return output;
+      return madePost;
     } catch (e, st) {
       print(e);
       print(st);
