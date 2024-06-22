@@ -121,9 +121,10 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
     AddPostDialog.show(context, controller: controller);
   }
 
-//details cars
+//details cards
   void showConfirmationDialog(
       BuildContext context, int postId, PostController controller) {
+    var posts = controller.getPostByIdLocally(postId);
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -133,10 +134,10 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("ID: ${postId.toString()}\n"),
-              Text("Title: ${controller.posts[postId.toString()]}\n"),
-              Text("Body: ${controller.postList[postId].body}\n"),
-              Text("User: ${controller.postList[postId].userId}\n"),
+              Text("ID: ${posts.id}\n"),
+              Text("Title: ${posts.title}"),
+              Text("Body: ${posts.body}\n"),
+              Text("User: ${posts.userId}\n"),
             ],
           ),
           actions: [
@@ -277,6 +278,10 @@ class PostController with ChangeNotifier {
     error = null;
     posts = {};
     notifyListeners();
+  }
+
+  Post getPostByIdLocally(int postId) {
+    return posts[postId.toString()];
   }
 
   //to generate random ID
