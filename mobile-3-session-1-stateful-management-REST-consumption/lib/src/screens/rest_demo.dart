@@ -117,6 +117,29 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
     );
   }
 
+  Future<void> showAlertIfEmpty(
+      BuildContext context, String userInput, String userInputTwo) async {
+    if (userInput.trim().isEmpty || userInputTwo.trim().isEmpty) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Validation Error'),
+            content: const Text('Please input all fields'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop(); // Dismiss the dialog
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
   showNewPostFunction(BuildContext context) {
     AddPostDialog.show(context, controller: controller);
   }
