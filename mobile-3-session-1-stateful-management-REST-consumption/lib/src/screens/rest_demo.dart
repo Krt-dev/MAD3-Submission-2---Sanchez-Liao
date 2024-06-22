@@ -117,29 +117,6 @@ class _RestDemoScreenState extends State<RestDemoScreen> {
     );
   }
 
-  Future<void> showAlertIfEmpty(
-      BuildContext context, String userInput, String userInputTwo) async {
-    if (userInput.trim().isEmpty || userInputTwo.trim().isEmpty) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Validation Error'),
-            content: const Text('Please input all fields'),
-            actions: <Widget>[
-              TextButton(
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop(); // Dismiss the dialog
-                },
-              ),
-            ],
-          );
-        },
-      );
-    }
-  }
-
   showNewPostFunction(BuildContext context) {
     AddPostDialog.show(context, controller: controller);
   }
@@ -207,9 +184,15 @@ class _AddPostDialogState extends State<AddPostDialog> {
       actions: [
         ElevatedButton(
           onPressed: () async {
-            widget.controller.makePost(
-                title: titleC.text.trim(), body: bodyC.text.trim(), userId: 1);
-            Navigator.of(context).pop();
+            if (titleC.text.trim().isEmpty || bodyC.text.trim().isEmpty) {
+              return widget.controller.showAlertIfEmpty(context);
+            } else {
+              await widget.controller.makePost(
+                  title: titleC.text.trim(),
+                  body: bodyC.text.trim(),
+                  userId: 1);
+              Navigator.of(context).pop();
+            }
           },
           child: const Text("Add"),
         )
@@ -256,12 +239,17 @@ class EditPostDialog {
         actions: [
           ElevatedButton(
             onPressed: () async {
-              await controller.editPost(
-                postId: postID,
-                title: titleC.text.trim(),
-                body: bodyC.text.trim(),
-                userId: postID,
-              );
+              if (titleC.text.trim().isEmpty || bodyC.text.trim().isEmpty) {
+                return controller.showAlertIfEmpty(context);
+              } else {
+                await controller.editPost(
+                  postId: postID,
+                  title: titleC.text.trim(),
+                  body: bodyC.text.trim(),
+                  userId: postID,
+                );
+              }
+
               Navigator.of(context).pop();
             },
             child: const Text("Edit"),
@@ -305,6 +293,26 @@ class PostController with ChangeNotifier {
 
   Post getPostByIdLocally(int postId) {
     return posts[postId.toString()];
+  }
+
+  Future<void> showAlertIfEmpty(BuildContext context) async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Validation Error'),
+          content: const Text('Please input all fields'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Dismiss the dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   //to generate random ID
